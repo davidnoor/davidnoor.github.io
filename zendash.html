@@ -37,10 +37,13 @@
       
       function doAuthStuff()
       {
+        var returnPoint = "https://davidnoor.github.io/zendash.html";
+        //var returnPoint = "http://localhost/zendash.html";
+
         var endpoint = "https://crankuptheamps.zendesk.com/oauth/authorizations/new";
         var url_params = '?' + 
           'response_type=token&' +
-          'redirect_uri=' + encodeURIComponent("https://davidnoor.github.io/zendash.html") + '&' +
+          'redirect_uri=' + encodeURIComponent(returnPoint) + '&' +
           'client_id=davids_status_app&' +
           'scope=' + encodeURIComponent("read write");
         window.location=endpoint+url_params;
@@ -116,32 +119,59 @@
         }
       };
 
+      function pad(v)
+      {
+        if(v<10) return "0"+v;
+        return v;
+      }
+      function toTimeDesc(tm)
+      {
+        var result = "";
+        var s = tm % 60;
+        tm -= s;
+        tm /= 60;
+        result = pad(s) + "s";
+
+        if (tm == 0) result
+        var m = tm % 60;
+        tm -= m;
+        tm /= 60;
+        result = pad(m) + "m" + result;
+
+        if(tm == 0) return result;
+        var h = tm % 24;
+        tm -= h;
+        tm /= 24;
+        result = pad(h) + "h" + result;
+
+        if(tm == 0) return result;
+        var d = tm;
+        result = pad(d) + "d" + result;
+
+        return result;
+      }
+
       function doLoad()
       {
         document.getElementById("errortext").innerText = "";
         var accessToken = getAccessToken();
         var request = new XMLHttpRequest();
-        request.open("GET", baseURL + "/api/v2/users.json?role[]=agent&role[]=admin", true);
+        request.open("GET", baseURL + "/api/v2/channels/voice/stats/agents_activity.json");
         request.onload = function(e)
         {
           newHTML = "";
-          template = '<div class="row"><div class="three columns">NAME</div><div class="three columns"><label><input type="checkbox" id="USERID_active" onclick="checkboxClicked(this.id)"/><span> Active</span></div></div>';
+          template = '<div class="row"><div class="three columns">NAME</div><div class="six columns"><input type="checkbox" CHECKED id="USERID_active" onclick="checkboxClicked(this.id)"/><span> Active TIME</span></div></div>';
           if(request.readyState == 4)
           {
             if(request.status == 200)
             {
-              var users = JSON.parse(request.responseText)["users"];
+              var users = JSON.parse(request.responseText)["agents_activity"];
               for (var idx in users)
               {
                 var user = users[idx];
-                console.log("RETURNED " + user["name"]);
-                newHTML += template.replace("NAME",user["name"]).replace("USERID",user["id"]);
-                // send off availability request
-                var availRequest = new XMLHttpRequest();
-                availRequest.open("GET", baseURL + "/api/v2/channels/voice/availabilities/"+user["id"]+".json", true);
-                availRequest.setRequestHeader("Authorization", "Bearer " + accessToken);
-                availRequest.onload = makeUpdaterFunction(user["id"]);
-                availRequest.send(null);
+                var isActive = user["status_code"] != 'not_available';
+                newHTML += template.replace("NAME",user["name"]).replace("USERID",user["agent_id"])
+                  .replace("CHECKED", isActive ? "checked": "").replace("TIME", isActive ? ("(" + toTimeDesc(user["online_time"]) + ")") : ""); 
 
               }
               document.getElementById("users-container").innerHTML = newHTML;
