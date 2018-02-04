@@ -1,0 +1,187 @@
+<html>
+  <head>
+    <script>
+      window.addEventListener('load',init,false);
+      baseURL = "https://crankuptheamps.zendesk.com";
+
+      function readUrlParam(url, param) {
+        param += '=';
+        if (url.indexOf(param) !== -1) {
+          var start = url.indexOf(param) + param.length;
+          var value = url.substr(start);
+          if (value.indexOf('&') !== -1) {
+            var end = value.indexOf('&');
+            value = value.substring(0, end);
+          }
+          return value;
+          } else {
+          return false;
+        }
+      }
+      function init()
+      {
+        var url = window.location.href;
+        if (url.indexOf('access_token=') !== -1)
+        {
+          var accessToken = readUrlParam(url, 'access_token');
+          localStorage.setItem("zauth",accessToken);
+          doLoad();
+        }
+        if (url.indexOf("error=") !== -1)
+        {
+          var errorDesc = readUrlParam(url, "error_description");
+          document.getElementById("errortext").innerText = errorDesc;
+        }
+      }
+      
+      function doAuthStuff()
+      {
+        var endpoint = "https://crankuptheamps.zendesk.com/oauth/authorizations/new";
+        var url_params = '?' + 
+          'response_type=token&' +
+          'redirect_uri=' + encodeURIComponent("https://davidnoor.github.io/zendash.html") + '&' +
+          'client_id=davids_status_app&' +
+          'scope=' + encodeURIComponent("read write");
+        window.location=endpoint+url_params;
+      }
+
+      function makeUpdaterFunction(userid)
+      {
+        return function(e)
+        {
+          var response = e.target;
+          if(response.readyState == 4)
+          {
+            if(response.status == 200)
+            {
+              var avail = JSON.parse(response.responseText)["availability"];
+              elemID = userid.toString()+"_active";
+              elem = document.getElementById(elemID);
+              elem.value = avail["available"];
+              elem.checked = avail["available"];
+            }
+          }
+          else
+          {
+            console.error(response.statusText);
+          }
+        };
+      }
+
+      function getAccessToken()
+      {
+        if(localStorage.getItem("zauth"))
+        {
+          return localStorage.getItem("zauth");
+        }
+        else
+        {
+          doAuthStuff();
+        }
+      }
+
+      function resetAccessToken()
+      {
+        localStorage.removeItem("zauth");
+      }
+
+      function checkboxClicked(checkboxId)
+      {
+        var userId = checkboxId.split("_")[0];
+        var elem = document.getElementById(checkboxId);
+        var newValue = document.getElementById(checkboxId).checked;
+        console.log(userId);
+
+        var r = new XMLHttpRequest();
+        var url = baseURL + "/api/v2/channels/voice/availabilities/"+userId+".json";
+        r.open("PUT", url, false);
+        r.setRequestHeader("Content-Type","application/json");
+        r.setRequestHeader("Authorization", "Bearer " + getAccessToken());
+        var payload = JSON.stringify({"availability": {"via":"phone","available": newValue}})
+        r.send(payload);
+
+        if (r.status == 200)
+        {
+          var avail = JSON.parse(r.responseText)["availability"];
+          elem.value = avail["available"];
+          elem.checked = avail["available"];
+        }
+        else
+        {
+          elem.value = !newValue;
+          elem.checked = !newValue;
+
+          console.error(r.statusText);
+        }
+      };
+
+      function doLoad()
+      {
+        document.getElementById("errortext").innerText = "";
+        var accessToken = getAccessToken();
+        var request = new XMLHttpRequest();
+        request.open("GET", baseURL + "/api/v2/users.json?role[]=agent&role[]=admin", true);
+        request.onload = function(e)
+        {
+          newHTML = "";
+          template = '<div class="row"><div class="three columns">NAME</div><div class="three columns"><label><input type="checkbox" id="USERID_active" onclick="checkboxClicked(this.id)"/><span> Active</span></div></div>';
+          if(request.readyState == 4)
+          {
+            if(request.status == 200)
+            {
+              var users = JSON.parse(request.responseText)["users"];
+              for (var idx in users)
+              {
+                var user = users[idx];
+                console.log("RETURNED " + user["name"]);
+                newHTML += template.replace("NAME",user["name"]).replace("USERID",user["id"]);
+                // send off availability request
+                var availRequest = new XMLHttpRequest();
+                availRequest.open("GET", baseURL + "/api/v2/channels/voice/availabilities/"+user["id"]+".json", true);
+                availRequest.setRequestHeader("Authorization", "Bearer " + accessToken);
+                availRequest.onload = makeUpdaterFunction(user["id"]);
+                availRequest.send(null);
+
+              }
+              document.getElementById("users-container").innerHTML = newHTML;
+            }
+            else
+            {
+              resetAccessToken();
+              document.getElementById("errortext").innerText = request.statusText;
+              console.error(request.statusText);
+            }
+          }
+        };
+        request.onerror = function(e)
+        {
+          resetAccessToken();
+          document.getElementById("errortext").innerText = request.statusText;
+          console.error(request.statusText);
+        };
+        request.setRequestHeader("Authorization", "Bearer " + accessToken);
+        request.send(null);
+      }
+    </script>
+    <title>Dash</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css"/>
+  </head>
+  <body>
+    <div class="container">
+      <h2>zendash</h2>
+      <form action="">
+        <div class="row">
+          <div class="four columns">
+            <a class="button button-primary" href="#" onclick="doLoad()">Connect to Zendesk</a>
+          </div>
+          <div class="eight columns">
+              <span id="errortext" style="color:red"></span>
+          </div>
+        </div>
+        <div id="users-container"/>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
+
