@@ -32,6 +32,7 @@
           var errorDesc = readUrlParam(url, "error_description");
           document.getElementById("errortext").innerText = errorDesc;
         }
+        window.location.hash = "";
       }
       
       function doAuthStuff()
