@@ -37,8 +37,8 @@
       
       function doAuthStuff()
       {
-        var returnPoint = "https://davidnoor.github.io/zendash.html";
-        //var returnPoint = "http://localhost/zendash.html";
+        //var returnPoint = "https://davidnoor.github.io/zendash.html";
+        var returnPoint = "http://localhost/zendash.html";
 
         var endpoint = "https://crankuptheamps.zendesk.com/oauth/authorizations/new";
         var url_params = '?' + 
@@ -166,8 +166,8 @@
         request.open("GET", baseURL + "/api/v2/channels/voice/stats/agents_activity.json");
         request.onload = function(e)
         {
-          newHTML = "";
-          template = '<div class="row"><div class="three columns">NAME</div><div class="six columns"><input type="checkbox" CHECKED id="USERID_active" onclick="checkboxClicked(this.id)"/><span> Active TIME</span></div></div>';
+          newHTML = '<div class="row"><div class="three columns">Name</div><div class="three columns">Talk Status</div><div class="six columns">Online Time Today</div></div>';
+          template = '<div class="row" SHADE><div class="three columns">NAME</div><div class="three columns"><input type="checkbox" CHECKED id="USERID_active" onclick="checkboxClicked(this.id)"/><span> Active</span></div><div class="six columns">TIME</div></div>';
           if(request.readyState == 4)
           {
             if(request.status == 200)
@@ -178,10 +178,13 @@
                 var user = users[idx];
                 var isActive = user["status_code"] != 'not_available';
                 newHTML += template.replace("NAME",user["name"]).replace("USERID",user["agent_id"])
-                  .replace("CHECKED", isActive ? "checked": "").replace("TIME", isActive ? ("(" + toTimeDesc(user["online_time"]) + ")") : ""); 
+                .replace("CHECKED", isActive ? "checked": "").replace("TIME", user["online_time"] > 0 ? toTimeDesc(user["online_time"]) : "")
+                .replace("SHADE", idx%2==0? 'style="background-color: #eeeeee"' : "");
 
               }
               document.getElementById("users-container").innerHTML = newHTML;
+              document.getElementById("button").innerText = "Refresh";
+              document.getElementById("status").innerText = "last updated " + new Date().toLocaleString();
             }
             else
             {
@@ -210,13 +213,16 @@
       <form action="">
         <div class="row">
           <div class="four columns">
-            <a class="button button-primary" href="#" onclick="doLoad()">Connect to Zendesk</a>
+            <a id="button" class="button button-primary" href="#" onclick="doLoad()">Connect to Zendesk</a>
           </div>
           <div class="eight columns">
               <span id="errortext" style="color:red"></span>
           </div>
         </div>
         <div id="users-container"/>
+        </div>
+        <div class="row">
+          <small><span id="status"></span></small>
         </div>
       </form>
     </div>
