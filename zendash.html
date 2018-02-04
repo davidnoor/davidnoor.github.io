@@ -130,23 +130,30 @@
         var s = tm % 60;
         tm -= s;
         tm /= 60;
-        result = pad(s) + "s";
+        result = pad(s);
 
-        if (tm == 0) result
+        if (tm == 0) return "00:00:" + result;
         var m = tm % 60;
         tm -= m;
         tm /= 60;
-        result = pad(m) + "m" + result;
+        result = pad(m) + ":" + result;
 
-        if(tm == 0) return result;
+        if(tm == 0) return "00:" + result;
         var h = tm % 24;
         tm -= h;
         tm /= 24;
-        result = pad(h) + "h" + result;
+        result = pad(h) + ":" + result;
 
         if(tm == 0) return result;
         var d = tm;
-        result = pad(d) + "d" + result;
+        if (d == 1)
+        {
+          result = d + " day, " + result;
+        }
+        else
+        {
+          result = d + " days, " + result;
+        }
 
         return result;
       }
