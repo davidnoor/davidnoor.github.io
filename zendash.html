@@ -93,7 +93,8 @@
       {
         var userId = checkboxId.split("_")[0];
         var elem = document.getElementById(checkboxId);
-        var newValue = document.getElementById(checkboxId).checked ? "online" : "offline";
+        var isChecked = document.getElementById(checkboxId).checked; 
+        var newValue = isChecked ? "online" : "offline";
         console.log(userId);
 
         var r = new XMLHttpRequest();
@@ -107,13 +108,14 @@
         if (r.status == 200)
         {
           var avail = JSON.parse(r.responseText)["availability"];
-          elem.value = avail["available"];
-          elem.checked = avail["available"];
+          var isAvailable = avail["agent_status"] == "online" ? true : false;
+          elem.value = isAvailable;
+          elem.checked = isAvailable;
         }
         else
         {
-          elem.value = !newValue;
-          elem.checked = !newValue;
+          elem.value = !isChecked;
+          elem.checked = !isChecked;
 
           console.error(r.statusText);
         }
