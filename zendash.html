@@ -108,7 +108,7 @@
         if (r.status == 200)
         {
           var avail = JSON.parse(r.responseText)["availability"];
-          var isAvailable = avail["agent_status"] == "online" ? true : false;
+          var isAvailable = avail["agent_state"] == "online" ? true : false;
           elem.value = isAvailable;
           elem.checked = isAvailable;
         }
