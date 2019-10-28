@@ -176,7 +176,8 @@
               for (var idx in users)
               {
                 var user = users[idx];
-                var isActive = user["status_code"] != 'not_available';
+                // zendesk api changed... var isActive = user["status_code"] != 'not_available';
+                var isActive = user["agent_state"] != 'offline';
                 newHTML += template.replace("NAME",user["name"]).replace("USERID",user["agent_id"])
                 .replace("CHECKED", isActive ? "checked": "").replace("TIME", user["online_time"] > 0 ? toTimeDesc(user["online_time"]) : "")
                 .replace("SHADE", idx%2==0? 'style="background-color: #eeeeee"' : "");
