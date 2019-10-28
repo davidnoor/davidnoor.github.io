@@ -93,7 +93,7 @@
       {
         var userId = checkboxId.split("_")[0];
         var elem = document.getElementById(checkboxId);
-        var newValue = document.getElementById(checkboxId).checked;
+        var newValue = document.getElementById(checkboxId).checked ? "online" : "offline";
         console.log(userId);
 
         var r = new XMLHttpRequest();
@@ -101,7 +101,7 @@
         r.open("PUT", url, false);
         r.setRequestHeader("Content-Type","application/json");
         r.setRequestHeader("Authorization", "Bearer " + getAccessToken());
-        var payload = JSON.stringify({"availability": {"via":"phone","available": newValue}})
+        var payload = JSON.stringify({"availability": {"via":"phone","agent_state": newValue}})
         r.send(payload);
 
         if (r.status == 200)
@@ -181,7 +181,6 @@
                 newHTML += template.replace("NAME",user["name"]).replace("USERID",user["agent_id"])
                 .replace("CHECKED", isActive ? "checked": "").replace("TIME", user["online_time"] > 0 ? toTimeDesc(user["online_time"]) : "")
                 .replace("SHADE", idx%2==0? 'style="background-color: #eeeeee"' : "");
-
               }
               document.getElementById("users-container").innerHTML = newHTML;
               document.getElementById("button").innerText = "Refresh";
